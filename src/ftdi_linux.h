@@ -1,3 +1,11 @@
+/*******************************************************************************
+ *
+ * Copyright (c) 2020 Albert Krenz
+ * 
+ * This code is licensed under BSD + Patent (see LICENSE.txt for full license text)
+ *******************************************************************************/
+
+ /* SPDX-License-Identifier: BSD-2-Clause-Patent */
 #ifndef _FTDI_HPP_
 #define _FTDI_HPP_
 

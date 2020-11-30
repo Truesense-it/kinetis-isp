@@ -1,3 +1,8 @@
+# Copyright (c) 2020 Albert Krenz
+# 
+# This code is licensed under BSD + Patent (see LICENSE.txt for full license text)
+
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 set (CMAKE_CXX_STANDARD 14)
 
 find_package ( LibFTDI1 NO_MODULE REQUIRED )

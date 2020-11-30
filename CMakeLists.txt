@@ -1,3 +1,8 @@
+# Copyright (c) 2020 Albert Krenz
+# 
+# This code is licensed under BSD + Patent (see LICENSE.txt for full license text)
+
+# SPDX-License-Identifier: BSD-2-Clause-Patent
 project(nxp-isp)
 cmake_minimum_required(VERSION 3.9)
 
