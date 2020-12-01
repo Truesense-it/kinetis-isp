@@ -1,0 +1,28 @@
+stages:
+  - build
+  - test
+
+include:
+  - template: Code-Quality.gitlab-ci.yml
+
+before_script:
+  - apt-get update -qq && apt-get install -y cmake ninja-build libgtest-dev libgmock-dev libftdi1-dev
+
+build:gcc:
+  image: "gcc:10"
+  stage: build
+  script:
+    - mkdir -p build
+    - cd build
+    - cmake -GNinja -DCOVERAGE=ON -DBUILD_TESTING=ON ..
+    - ninja
+  artifacts:
+    paths:
+      - build/
+
+unit_test:
+  image: "gcc:10"
+  stage: test
+  script:
+    - cd build
+    - ctest --output-on-failure
