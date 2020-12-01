@@ -38,7 +38,9 @@ public:
     ram0 = 0x06,
     ram1 = 0x07
   };
-  int openMemory(const MemoryID);
+  int getMemoryHandle(const MemoryID);
+
+  bool memoryIsErased(uint8_t handle);
 
 protected:
   void insertCrc(std::vector<uint8_t>& data, unsigned long crc) const;

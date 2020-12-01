@@ -21,6 +21,8 @@ enum FrameType : uint8_t{
   OpenMemoryForAccessResp = 0x41,
   EraseMemoryReq = 0x42,
   EraseMemoryResp = 0x43,
+  CheckBlankMemoryReq = 0x44,
+  CheckBlankMemoryResp = 0x45,
   EnableISPModeReq = 0x4E,
   EnableISPModeResp = 0x4F
 };
@@ -166,7 +168,7 @@ int K32W061::eraseMemory(uint8_t handle){
   return 0;
 }
 
-int K32W061::openMemory(const K32W061::MemoryID id){
+int K32W061::getMemoryHandle(const K32W061::MemoryID id){
   struct __attribute__((__packed__)) OpenMemoryHeader{
     uint8_t memID;
     uint8_t accessMode;
@@ -221,5 +223,40 @@ unsigned long K32W061::extractCrc(std::vector<uint8_t> data) const{
   crc |= data[data.size() - CRC_SIZE + 0] << 24;
 
   return crc;
+}
+
+bool K32W061::memoryIsErased(uint8_t handle){
+  struct __attribute__((__packed__)) checkBlankMemoryHeader{
+    uint8_t handle;
+    uint8_t mode;
+    uint32_t address;
+    uint32_t length;
+  }; 
+  std::vector<uint8_t> req(sizeof(FrameHeader) + sizeof(checkBlankMemoryHeader) + CRC_SIZE);
+  FrameHeader * frame_header = reinterpret_cast<FrameHeader*>(req.data());
+  checkBlankMemoryHeader * blank_memory_header = reinterpret_cast<checkBlankMemoryHeader*>(req.data() + sizeof(FrameHeader));
+  frame_header->type = FrameType::CheckBlankMemoryReq;
+  frame_header->size = htons(req.size());
+  blank_memory_header->address = 0x00;
+  blank_memory_header->length = 0x9DE00;
+  blank_memory_header->handle = handle;
+  blank_memory_header->mode = 0x00;
+
+  auto crc = calculateCrc(req);
+  insertCrc(req, crc);
+  
+  auto ret = dev.writeData(req);
+  if(ret != static_cast<int>(req.size())){
+    return false;
+  }
+
+  auto resp = dev.readData();
+  if( resp.size() == 0 ||
+      !frameHasType(resp, FrameType::CheckBlankMemoryResp) ||
+      extractCrc(resp) != calculateCrc(resp) ||
+      !responseHasSuccessStatus(resp)){
+    return false;
+  }
+  return true;
 }
 

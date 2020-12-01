@@ -41,6 +41,7 @@ public:
 
 class K32W061_OpenMemory : public K32W061_EnableISPMode {};
 class K32W061_EraseMemory : public K32W061_EnableISPMode {};
+class K32W061_MemoryIsErased : public K32W061_EnableISPMode {};
 
 TEST_F(K32W061_EnableISPMode, callsWriteAfterRead){
   testing::Sequence s1;
@@ -135,7 +136,7 @@ TEST_F(K32W061_OpenMemory, callsWriteAfterRead){
   testing::Sequence s1;
   EXPECT_CALL(ftdi, writeData(_)).Times(1);
   EXPECT_CALL(ftdi, readData()).Times(1);
-  dev.openMemory(K32W061::MemoryID::flash);
+  dev.getMemoryHandle(K32W061::MemoryID::flash);
 }
 
 TEST_F(K32W061_OpenMemory, sendsOpenMemoryRequest){
@@ -154,7 +155,7 @@ TEST_F(K32W061_OpenMemory, sendsOpenMemoryRequest){
 
   EXPECT_CALL(ftdi, writeData(ContainerEq(req))).Times(1);
   EXPECT_CALL(ftdi, readData());
-  dev.openMemory(K32W061::MemoryID::flash);
+  dev.getMemoryHandle(K32W061::MemoryID::flash);
 }
 
 TEST_F(K32W061_OpenMemory, returnsSuccessOnValidResponse){
@@ -173,20 +174,20 @@ TEST_F(K32W061_OpenMemory, returnsSuccessOnValidResponse){
 
   EXPECT_CALL(ftdi, writeData(_)).WillOnce(Return(10));
   EXPECT_CALL(ftdi, readData()).WillOnce(Return(resp));
-  auto ret = dev.openMemory(K32W061::MemoryID::flash);
+  auto ret = dev.getMemoryHandle(K32W061::MemoryID::flash);
   EXPECT_EQ(ret, 0);
 }
 
 TEST_F(K32W061_OpenMemory, sendOpenMemoryFrameType){
   EXPECT_CALL(ftdi, writeData(FrameTypeIs(0x40))).Times(1);
   EXPECT_CALL(ftdi, readData());
-  dev.openMemory(K32W061::MemoryID::psect);
+  dev.getMemoryHandle(K32W061::MemoryID::psect);
 }
 
 TEST_F(K32W061_OpenMemory, openPsectMemory){
   EXPECT_CALL(ftdi, writeData(MemoryIdIs(0x01))).Times(1);
   EXPECT_CALL(ftdi, readData());
-  dev.openMemory(K32W061::MemoryID::psect);
+  dev.getMemoryHandle(K32W061::MemoryID::psect);
 }
 
 TEST_F(K32W061_OpenMemory, failsIfresponseCrcIsWrong){
@@ -204,7 +205,7 @@ TEST_F(K32W061_OpenMemory, failsIfresponseCrcIsWrong){
 
   EXPECT_CALL(ftdi, writeData(_));
   EXPECT_CALL(ftdi, readData()).WillRepeatedly(Return(response));
-  auto ret = dev.openMemory(K32W061::MemoryID::flash);
+  auto ret = dev.getMemoryHandle(K32W061::MemoryID::flash);
   EXPECT_NE(ret, 0);
 }
 
@@ -223,7 +224,7 @@ TEST_F(K32W061_OpenMemory, failsIfResponseFrameTypeIsNot0x41){
 
   EXPECT_CALL(ftdi, writeData(_));
   EXPECT_CALL(ftdi, readData()).WillRepeatedly(Return(response));
-  auto ret = dev.openMemory(K32W061::MemoryID::flash);
+  auto ret = dev.getMemoryHandle(K32W061::MemoryID::flash);
   EXPECT_NE(ret, 0);
 }
 
@@ -242,7 +243,7 @@ TEST_F(K32W061_OpenMemory, failsIfResponseNotSuccess){
 
   EXPECT_CALL(ftdi, writeData(_));
   EXPECT_CALL(ftdi, readData()).WillRepeatedly(Return(response));
-  auto ret = dev.openMemory(K32W061::MemoryID::flash);
+  auto ret = dev.getMemoryHandle(K32W061::MemoryID::flash);
   EXPECT_NE(ret, 0);
 }
 
@@ -261,7 +262,7 @@ TEST_F(K32W061_OpenMemory, returnsHandleFromResponse){
 
   EXPECT_CALL(ftdi, writeData(_));
   EXPECT_CALL(ftdi, readData()).WillRepeatedly(Return(response));
-  auto ret = dev.openMemory(K32W061::MemoryID::flash);
+  auto ret = dev.getMemoryHandle(K32W061::MemoryID::flash);
   EXPECT_EQ(ret, 0xFF);
 }
 
@@ -407,4 +408,75 @@ TEST_F(K32W061_EraseMemory, usesSpecifiedHandleInWriterequest){
   EXPECT_CALL(ftdi, readData());
   auto ret = dev.eraseMemory(0xFF);
   EXPECT_NE(ret, 0);
+}
+
+TEST_F(K32W061_MemoryIsErased, callsReadAfterWrite){
+  testing::Sequence s;
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(18));
+  EXPECT_CALL(ftdi, readData()).Times(1);
+  dev.memoryIsErased(0);
+}
+
+TEST_F(K32W061_MemoryIsErased, verifyWriteFrameHeader){
+  std::vector<uint8_t> req{0x00, 0x00, 0x12, 0x44};
+  EXPECT_CALL(ftdi, writeData(FrameHeaderEq(req))).Times(1);
+  dev.memoryIsErased(0);
+}
+
+TEST_F(K32W061_MemoryIsErased, verifyWritePayload){
+  std::vector<uint8_t> payload{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xDE, 0x09, 0x00};
+  EXPECT_CALL(ftdi, writeData(FramePayloadEq(payload))).Times(1);
+  dev.memoryIsErased(0);
+}
+
+TEST_F(K32W061_MemoryIsErased, verifyWriteChecksum){
+  std::vector<uint8_t> crc{0x01, 0xDC, 0xC3, 0xBA};
+  EXPECT_CALL(ftdi, writeData(FrameCrcEq(crc))).Times(1);
+  dev.memoryIsErased(0);
+}
+
+TEST_F(K32W061_MemoryIsErased, failsIfNotAllBytesWritten){
+  EXPECT_CALL(ftdi, writeData(_)).WillOnce(Return(0));
+  auto ret = dev.memoryIsErased(0);
+  EXPECT_NE(ret, true);
+}
+
+TEST_F(K32W061_MemoryIsErased, failsIfWriteFails){
+  EXPECT_CALL(ftdi, writeData(_)).WillOnce(Return(-1));
+  auto ret = dev.memoryIsErased(0);
+  EXPECT_NE(ret, true);
+}
+
+TEST_F(K32W061_MemoryIsErased, returnsSuccessOnValidResponse){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x09, 0x45, 0x00, 0x44, 0xFD, 0x77, 0xD2};
+  EXPECT_CALL(ftdi, writeData(_)).WillOnce(Return(18));
+  EXPECT_CALL(ftdi, readData()).WillOnce(Return(resp));
+  auto ret = dev.memoryIsErased(0);
+  EXPECT_EQ(ret, true);
+}
+
+TEST_F(K32W061_MemoryIsErased, failsIfResponseFrameTypeIsNot0x45){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x09, 0x46, 0x00, 0x44, 0xFD, 0x77, 0xD2};
+  EXPECT_CALL(ftdi, writeData(_)).WillOnce(Return(18));
+  EXPECT_CALL(ftdi, readData()).WillOnce(Return(resp));
+  auto ret = dev.memoryIsErased(0);
+  EXPECT_NE(ret, true);
+}
+
+TEST_F(K32W061_MemoryIsErased, failsIfResponseCrcIsWrong){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x09, 0x45, 0x00, 0x44, 0xFD, 0x77, 0xD3};
+
+  EXPECT_CALL(ftdi, writeData(_)).WillOnce(Return(18));
+  EXPECT_CALL(ftdi, readData()).WillOnce(Return(resp));
+  auto ret = dev.memoryIsErased(0);
+  EXPECT_NE(ret, true);
+}
+
+TEST_F(K32W061_MemoryIsErased, failsIfResponseStatusIsNotSuccess){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x09, 0x45, 0xF9, 0x80, 0x9C, 0x3D, 0x6A };
+
+  EXPECT_CALL(ftdi, writeData(_)).WillOnce(Return(18));
+  EXPECT_CALL(ftdi, readData()).WillOnce(Return(resp));
+  auto ret = dev.memoryIsErased(0);
+  EXPECT_NE(ret, true);
 }
