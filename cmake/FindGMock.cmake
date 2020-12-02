@@ -58,6 +58,7 @@
 # IN THE SOFTWARE.
 #=============================================================================
 
+# SPDX-License-Identifier: MIT
 
 function(_gmock_append_debugs _endvar _library)
   if(${_library} AND ${_library}_DEBUG)
