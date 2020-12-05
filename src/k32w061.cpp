@@ -17,6 +17,8 @@
 enum FrameType : uint8_t{
   ResetReq = 0x14,
   ExecuteReq = 0x21,
+  GetDeviceInfoReq = 0x32,
+  GetDeviceInfoResp = 0x33,
   OpenMemoryForAccessReq = 0x40,
   OpenMemoryForAccessResp = 0x41,
   EraseMemoryReq = 0x42,
@@ -110,22 +112,22 @@ int K32W061::enableISPMode(){
 }
 
 K32W061::DeviceInfo K32W061::getDeviceInfo(){
-  std::vector<uint8_t>buf(4);
-  buf[0] = 0;
-  buf[1] = 0;
-  buf[2] = 8;
-  buf[3] = 0x32;
+  std::vector<uint8_t>req{0x00, 0x00, 0x08, 0x32, 0x00, 0x00, 0x00, 0x00};
 
-  int count = dev.writeData(buf);
-  if(count != 4){
+  auto crc = calculateCrc(req);
+  insertCrc(req, crc);
+  int count = dev.writeData(req);
+  if(count != 8){
     return K32W061::DeviceInfo();
   }
 
   K32W061::DeviceInfo dev_info;
   auto data = dev.readData();
-  FrameHeader * header = reinterpret_cast<FrameHeader*>(data.data());
-  if(header->type != 0x33){
-    return dev_info;
+  if( data.size() == 0 ||
+      !frameHasType(data, FrameType::GetDeviceInfoResp) ||
+      extractCrc(data) != calculateCrc(data) ||
+      !responseHasSuccessStatus(data)){
+    return K32W061::DeviceInfo();
   }
 
   struct __attribute__((__packed__)) DevInfoFrame{

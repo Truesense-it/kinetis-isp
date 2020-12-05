@@ -25,7 +25,17 @@ MATCHER_P(MemoryIdIs, id, "") { return arg.at(4) == id; }
 MATCHER_P(FrameTypeIs, type, "") { return arg.at(3) == type; }
 MATCHER_P(FrameHeaderEq, header, "") { return std::equal(header.begin(), header.end(), arg.begin());}
 MATCHER_P(FramePayloadEq, payload, "") {return std::equal(payload.begin(), payload.end(), std::begin(arg)+4);}
-MATCHER_P(FrameCrcEq, crc, "") {return std::equal(crc.begin(), crc.end(), std::end(arg)-4);}
+MATCHER_P(FrameCrcEq, crc, "") {
+  for(auto val: crc){
+    std::cout << std::hex << (unsigned)val << " ";
+  }
+  std::cout << std::endl;
+  for(auto val: arg){
+    std::cout << std::hex << (unsigned)val << " ";
+  }
+  std::cout << std::endl;
+  return std::equal(crc.begin(), crc.end(), std::end(arg)-4);
+  }
 
 
 
@@ -41,9 +51,11 @@ public:
 };
 
 class K32W061_OpenMemory : public K32W061_EnableISPMode {};
+class K32W061_GetDeviceInfo : public K32W061_EnableISPMode {};
 class K32W061_EraseMemory : public K32W061_EnableISPMode {};
 class K32W061_MemoryIsErased : public K32W061_EnableISPMode {};
 class K32W061_FlashMemory : public K32W061_EnableISPMode {};
+class K32W061_CloseMemory : public K32W061_EnableISPMode {};
 
 TEST_F(K32W061_EnableISPMode, callsReadAfterWrite){
   testing::Sequence s1;
@@ -88,12 +100,12 @@ TEST_F(K32W061_EnableISPMode, verifyWriteFrameHeader){
 }
 
 TEST_F(K32W061_EnableISPMode, verifyWriteFrameCrc){
-  std::vector<uint8_t> req(4);
-  req[0] = 0xA7;
-  req[1] = 0x09;
-  req[2] = 0xAE;
-  req[3] = 0x19;
-  EXPECT_CALL(ftdi, writeData(FrameCrcEq(req))).Times(1).WillOnce(Return(9));
+  std::vector<uint8_t> crc(4);
+  crc[0] = 0xA7;
+  crc[1] = 0x09;
+  crc[2] = 0xAE;
+  crc[3] = 0x19;
+  EXPECT_CALL(ftdi, writeData(FrameCrcEq(crc))).Times(1).WillOnce(Return(9));
   EXPECT_CALL(ftdi, readData());
   dev.enableISPMode();
 }
@@ -579,6 +591,75 @@ TEST_F(K32W061_FlashMemory, failsIfResponseFrameTypeIsNot0x49){
   std::vector<uint8_t> data(10);
   auto ret = dev.flashMemory(0, data);
   EXPECT_LT(ret, 0);
+}
+
+TEST_F(K32W061_GetDeviceInfo, callsReadAfterWrite){
+  testing::Sequence s;
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(8));
+  EXPECT_CALL(ftdi, readData()).Times(1);
+  dev.getDeviceInfo();
+}
+
+TEST_F(K32W061_GetDeviceInfo, verifyWriteFrameHeader){
+  std::vector<uint8_t> header{0x00, 0x00, 0x08, 0x32};
+  EXPECT_CALL(ftdi, writeData(FrameHeaderEq(header))).Times(1);
+  dev.getDeviceInfo();
+}
+
+TEST_F(K32W061_GetDeviceInfo, verifyWriteCrc){
+  std::vector<uint8_t> crc{0x21, 0x4A, 0x04, 0x94};
+  EXPECT_CALL(ftdi, writeData(FrameCrcEq(crc))).Times(1);
+  dev.getDeviceInfo();
+}
+
+TEST_F(K32W061_GetDeviceInfo, failsIfNotAllBytesWritten){
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(7));
+  auto ret = dev.getDeviceInfo();
+  EXPECT_EQ(ret.chipId, 0);
+  EXPECT_EQ(ret.version, 0);
+}
+
+TEST_F(K32W061_GetDeviceInfo, failsIfWriteFails){
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(-1));
+  auto ret = dev.getDeviceInfo();
+  EXPECT_EQ(ret.chipId, 0);
+  EXPECT_EQ(ret.version, 0);
+}
+
+TEST_F(K32W061_GetDeviceInfo, returnsValidInfoOnValidResponse){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x11, 0x33, 0x00, 0x88, 0x88, 0x88, 0x88, 0x00, 0x00, 0x00, 0x00, 0xAB, 0x9A, 0x33, 0xAE};
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(8));
+  EXPECT_CALL(ftdi, readData()).Times(1).WillOnce(Return(resp));
+  auto ret = dev.getDeviceInfo();
+  EXPECT_EQ(ret.chipId, 0x88888888);
+  EXPECT_EQ(ret.version, 0);
+}
+
+TEST_F(K32W061_GetDeviceInfo, failsIfResponseFrameTypeIsNot0x33){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x11, 0x32, 0x00, 0x88, 0x88, 0x88, 0x88, 0x00, 0x00, 0x00, 0x00, 0x44, 0x58, 0x58, 0x90};
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(8));
+  EXPECT_CALL(ftdi, readData()).Times(1).WillOnce(Return(resp));
+  auto ret = dev.getDeviceInfo();
+  EXPECT_EQ(ret.chipId, 0x00);
+  EXPECT_EQ(ret.version, 0);
+}
+
+TEST_F(K32W061_GetDeviceInfo, failsIfResponseCrcIsWrong){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x11, 0x33, 0x00, 0x88, 0x88, 0x88, 0x88, 0x00, 0x00, 0x00, 0x00, 0xAB, 0x9A, 0x33, 0xAF};
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(8));
+  EXPECT_CALL(ftdi, readData()).Times(1).WillOnce(Return(resp));
+  auto ret = dev.getDeviceInfo();
+  EXPECT_EQ(ret.chipId, 0x00);
+  EXPECT_EQ(ret.version, 0);
+}
+
+TEST_F(K32W061_GetDeviceInfo, failIsResponseTypeIsNotSuccess){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x11, 0x33, 0xF0, 0x88, 0x88, 0x88, 0x88, 0x00, 0x00, 0x00, 0x00, 0x3D, 0x6C, 0xF0, 0x34};
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(8));
+  EXPECT_CALL(ftdi, readData()).Times(1).WillOnce(Return(resp));
+  auto ret = dev.getDeviceInfo();
+  EXPECT_EQ(ret.chipId, 0x00);
+  EXPECT_EQ(ret.version, 0);
 }
 
 TEST_F(K32W061_CloseMemory, callsReadAfterWrite){
