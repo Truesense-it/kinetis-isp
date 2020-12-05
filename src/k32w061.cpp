@@ -9,7 +9,7 @@
 #include "k32w061.h"
 #include <iostream>
 #include <unistd.h>
-#include <zlib.h>
+#include <boost/crc.hpp>
 #include <arpa/inet.h>
 
 #define CRC_SIZE 4
@@ -221,7 +221,9 @@ void K32W061::insertCrc(std::vector<uint8_t>& data, unsigned long crc) const{
 }
 
 unsigned long K32W061::calculateCrc(const std::vector<uint8_t>& data) const{
-  return crc32(0, data.data(), data.size() - CRC_SIZE);
+  boost::crc_32_type result;
+  result.process_bytes(data.data(), data.size() - CRC_SIZE);
+  return result.checksum();
 }
 
 unsigned long K32W061::extractCrc(std::vector<uint8_t> data) const{
@@ -299,7 +301,7 @@ int K32W061::flashMemory(uint8_t handle, const std::vector<uint8_t>& data){
     insertCrc(req, crc);
 
     auto ret = dev.writeData(req);
-    if(ret != req.size()){
+    if(ret != (signed)req.size()){
       return -1;
     }
 

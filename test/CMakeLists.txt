@@ -10,7 +10,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 include(GoogleTest)
-find_package(ZLIB)
+# find_package(ZLIB)
 
 
 add_executable(k32w061_test k32w061_test.cpp ${CMAKE_SOURCE_DIR}/src/k32w061.cpp)
@@ -26,7 +26,7 @@ if(COVERAGE)
 endif()
 
 target_compile_options(k32w061_test PRIVATE "-Wno-error=unused-parameter")
-target_link_libraries(k32w061_test PRIVATE gmock ${GTEST_LIBRARIES} ${GMOCK_BOTH_LIBRARIES} ${GCOV_LIBRARIES} ZLIB::ZLIB Threads::Threads)
+target_link_libraries(k32w061_test PRIVATE gmock ${GTEST_LIBRARIES} ${GMOCK_BOTH_LIBRARIES} ${GCOV_LIBRARIES} Threads::Threads)
 
 gtest_discover_tests(k32w061_test
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
