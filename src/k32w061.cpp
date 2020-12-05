@@ -320,3 +320,11 @@ int K32W061::flashMemory(uint8_t handle, const std::vector<uint8_t>& data){
   
   return 0;
 }
+
+int K32W061::closeMemory(uint8_t handle){
+  std::vector<uint8_t> req;
+  dev.writeData(req);
+  dev.readData();
+
+  return 0;
+}

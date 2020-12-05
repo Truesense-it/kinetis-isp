@@ -580,3 +580,11 @@ TEST_F(K32W061_FlashMemory, failsIfResponseFrameTypeIsNot0x49){
   auto ret = dev.flashMemory(0, data);
   EXPECT_LT(ret, 0);
 }
+
+TEST_F(K32W061_CloseMemory, callsReadAfterWrite){
+  testing::Sequence s;
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(18));
+  EXPECT_CALL(ftdi, readData()).Times(1);
+  dev.closeMemory(0);
+}
+

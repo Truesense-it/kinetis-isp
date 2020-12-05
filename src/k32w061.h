@@ -44,6 +44,8 @@ public:
 
   int flashMemory(uint8_t handle, const std::vector<uint8_t>& data);
 
+  int closeMemory(uint8_t handle);
+
 protected:
   void insertCrc(std::vector<uint8_t>& data, unsigned long crc) const;
   unsigned long calculateCrc(const std::vector<uint8_t>& data) const;
