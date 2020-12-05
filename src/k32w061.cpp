@@ -23,6 +23,8 @@ enum FrameType : uint8_t{
   EraseMemoryResp = 0x43,
   CheckBlankMemoryReq = 0x44,
   CheckBlankMemoryResp = 0x45,
+  WriteMemoryReq = 0x48,
+  WriteMemoryResp = 0x49,
   EnableISPModeReq = 0x4E,
   EnableISPModeResp = 0x4F
 };
@@ -64,6 +66,11 @@ static bool responseHasSuccessStatus(std::vector<uint8_t> frame){
     return false;
   }
   return true;
+}
+
+static uint8_t responseType(std::vector<uint8_t> frame){
+  FrameHeader * header = reinterpret_cast<FrameHeader*>(frame.data());
+  return header->type;
 }
 
 K32W061::K32W061(FTDI::Interface &dev) : dev(dev){
@@ -211,7 +218,7 @@ void K32W061::insertCrc(std::vector<uint8_t>& data, unsigned long crc) const{
   data[data.size()-CRC_SIZE + 3] = (crc & 0xFF000000) >> 24;
 }
 
-unsigned long K32W061::calculateCrc(const std::vector<uint8_t> data) const{
+unsigned long K32W061::calculateCrc(const std::vector<uint8_t>& data) const{
   return crc32(0, data.data(), data.size() - CRC_SIZE);
 }
 
@@ -260,3 +267,56 @@ bool K32W061::memoryIsErased(uint8_t handle){
   return true;
 }
 
+int K32W061::flashMemory(uint8_t handle, const std::vector<uint8_t>& data){
+  struct __attribute__((__packed__)) FlashMemoryHeader{
+    uint8_t handle;
+    uint8_t mode;
+    uint32_t address;
+    uint32_t length;
+  }; 
+  auto size = data.size();
+  size_t chunk_size = 512;
+  if(data.size() < chunk_size){
+    chunk_size = data.size();
+  }
+  std::vector<uint8_t> req(sizeof(FrameHeader) + sizeof(FlashMemoryHeader) + chunk_size + CRC_SIZE);
+  
+  uint32_t offset = 0;
+  do{
+    FrameHeader * header = reinterpret_cast<FrameHeader*>(req.data());
+    FlashMemoryHeader * flash_memory_header = reinterpret_cast<FlashMemoryHeader*>(req.data() + sizeof(FrameHeader));
+    header->size = htons(sizeof(FrameHeader) + sizeof(FlashMemoryHeader) + chunk_size + CRC_SIZE);
+    header->type = FrameType::WriteMemoryReq;
+    flash_memory_header->handle = handle;
+    flash_memory_header->address = offset;
+    flash_memory_header->length = chunk_size;
+    flash_memory_header->mode = 0x00;
+    std::copy(std::begin(data)+offset, std::begin(data)+offset+chunk_size, req.begin() + sizeof(FrameHeader) + sizeof(FlashMemoryHeader));
+
+    auto crc = calculateCrc(req);
+    insertCrc(req, crc);
+
+    auto ret = dev.writeData(req);
+    if(ret != req.size()){
+      return -1;
+    }
+
+    auto resp = dev.readData();
+    if( resp.size() == 0 ||
+        extractCrc(resp) != calculateCrc(resp) ||
+        !responseHasSuccessStatus(resp) ||
+        responseType(resp) != FrameType::WriteMemoryResp){
+      return -1;
+    }
+
+    size -= chunk_size;
+    offset+= chunk_size;
+    if(size < chunk_size){
+      chunk_size = size;
+      req.resize(sizeof(FrameHeader) + sizeof(FlashMemoryHeader) + chunk_size + CRC_SIZE);
+    }
+  }while(size != 0);
+  
+  
+  return 0;
+}

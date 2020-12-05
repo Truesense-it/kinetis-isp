@@ -42,9 +42,11 @@ public:
 
   bool memoryIsErased(uint8_t handle);
 
+  int flashMemory(uint8_t handle, const std::vector<uint8_t>& data);
+
 protected:
   void insertCrc(std::vector<uint8_t>& data, unsigned long crc) const;
-  unsigned long calculateCrc(const std::vector<uint8_t> data) const;
+  unsigned long calculateCrc(const std::vector<uint8_t>& data) const;
   unsigned long extractCrc(std::vector<uint8_t> data) const;
 private:
   FTDI::Interface &dev;

@@ -15,6 +15,7 @@
 using ::testing::_;
 using ::testing::Return;
 using ::testing::ContainerEq;
+using ::testing::AllOf;
 
 int ftdi_usb_close(struct ftdi_context *ftdi){
   return 0;
@@ -42,8 +43,9 @@ public:
 class K32W061_OpenMemory : public K32W061_EnableISPMode {};
 class K32W061_EraseMemory : public K32W061_EnableISPMode {};
 class K32W061_MemoryIsErased : public K32W061_EnableISPMode {};
+class K32W061_FlashMemory : public K32W061_EnableISPMode {};
 
-TEST_F(K32W061_EnableISPMode, callsWriteAfterRead){
+TEST_F(K32W061_EnableISPMode, callsReadAfterWrite){
   testing::Sequence s1;
   EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(9));
   EXPECT_CALL(ftdi, readData()).Times(1).WillRepeatedly(Return(std::vector<uint8_t>()));
@@ -479,4 +481,102 @@ TEST_F(K32W061_MemoryIsErased, failsIfResponseStatusIsNotSuccess){
   EXPECT_CALL(ftdi, readData()).WillOnce(Return(resp));
   auto ret = dev.memoryIsErased(0);
   EXPECT_NE(ret, true);
+}
+
+TEST_F(K32W061_MemoryIsErased, usesSpecifiedHandleInWriterequest){
+  std::vector<uint8_t> payload{0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xDE, 0x09, 0x00};
+
+  EXPECT_CALL(ftdi, writeData(FramePayloadEq(payload))).WillOnce(Return(18));
+  EXPECT_CALL(ftdi, readData());
+  dev.memoryIsErased(0xFF);
+}
+
+TEST_F(K32W061_FlashMemory, callsReadAfterWrite){
+  testing::Sequence s;
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(18));
+  EXPECT_CALL(ftdi, readData()).Times(1);
+  std::vector<uint8_t> data;
+  dev.flashMemory(0, data);
+}
+
+TEST_F(K32W061_FlashMemory, verifyWriteFrameHeader){
+  std::vector<uint8_t> req{0x00, 0x00, 0x30, 0x48};
+  EXPECT_CALL(ftdi, writeData(FrameHeaderEq(req))).Times(1);
+  
+  std::vector<uint8_t> data(30);
+  dev.flashMemory(0, data);
+}
+
+TEST_F(K32W061_FlashMemory, verifyWritePayload){
+  std::vector<uint8_t> payload{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A, 0x00, 0x00, 0x00, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03};
+
+  EXPECT_CALL(ftdi, writeData(FramePayloadEq(payload))).Times(1);
+  std::vector<uint8_t> data(10);
+  std::for_each(data.begin(), data.end(), [](uint8_t &n){ n=3;});
+  dev.flashMemory(0, data);
+}
+
+TEST_F(K32W061_FlashMemory, verifyWriteChecksum){
+  std::vector<uint8_t> crc{0xE2, 0xCE, 0x2A, 0x75};
+
+  EXPECT_CALL(ftdi, writeData(FrameCrcEq(crc))).Times(1);
+  std::vector<uint8_t> data(10);
+  std::for_each(data.begin(), data.end(), [](uint8_t &n){ n=3;});
+  dev.flashMemory(0, data);
+}
+
+MATCHER_P(FrameMemoryAddressEq, offset, "") {
+  auto frame_offset = (uint32_t*)&arg[6];
+  return offset == *frame_offset;
+}
+MATCHER_P(FrameMemoryPayloadLengthEq, length, "") {
+  auto payload_length = (uint32_t*)&arg[10];
+  return length == *payload_length;
+}
+TEST_F(K32W061_FlashMemory, largePayloadIsSplitInto512byteChunks){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x09, 0x49, 0x00, 0xE8, 0x48, 0x38, 0xDE};
+  EXPECT_CALL(ftdi, writeData(AllOf(FrameMemoryAddressEq(1024), FrameMemoryPayloadLengthEq(10))) ).Times(1).WillOnce(Return(28));
+  EXPECT_CALL(ftdi, writeData(AllOf(FrameMemoryAddressEq(512), FrameMemoryPayloadLengthEq(512))) ).Times(1).WillOnce(Return(530));
+  EXPECT_CALL(ftdi, writeData(AllOf(FrameMemoryAddressEq(0), FrameMemoryPayloadLengthEq(512))) ).Times(1).WillOnce(Return(530));
+  EXPECT_CALL(ftdi, readData()).WillRepeatedly(Return(resp));
+  std::vector<uint8_t> data(1034);
+  for(unsigned int i=0;i<data.size();i++){
+    data[i] = i;
+  }
+  dev.flashMemory(0, data);
+}
+
+TEST_F(K32W061_FlashMemory, failsifWriteFails){
+  
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(-1));
+  std::vector<uint8_t> data(1034);
+  auto ret = dev.flashMemory(0, data);
+  EXPECT_LT(ret, 0);
+}
+
+TEST_F(K32W061_FlashMemory, failsIfReturnedCrcIsWrong){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x09, 0x49, 0x00, 0xE8, 0x48, 0x38, 0xDF};
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(28));
+  EXPECT_CALL(ftdi, readData()).Times(1).WillOnce(Return(resp));
+  std::vector<uint8_t> data(10);
+  auto ret = dev.flashMemory(0, data);
+  EXPECT_LT(ret, 0);
+}
+
+TEST_F(K32W061_FlashMemory, failsIfResponseStatusCodeIsNotSuccess){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x09, 0x49, 0xF0, 0x55, 0xF5, 0xCA, 0xC2};
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(28));
+  EXPECT_CALL(ftdi, readData()).Times(1).WillOnce(Return(resp));
+  std::vector<uint8_t> data(10);
+  auto ret = dev.flashMemory(0, data);
+  EXPECT_LT(ret, 0);
+}
+
+TEST_F(K32W061_FlashMemory, failsIfResponseFrameTypeIsNot0x49){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x09, 0x50, 0x00, 0x73, 0x48, 0x91, 0xC6};
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(28));
+  EXPECT_CALL(ftdi, readData()).Times(1).WillOnce(Return(resp));
+  std::vector<uint8_t> data(10);
+  auto ret = dev.flashMemory(0, data);
+  EXPECT_LT(ret, 0);
 }
