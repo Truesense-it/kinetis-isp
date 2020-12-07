@@ -10,11 +10,11 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 include(GoogleTest)
-# find_package(ZLIB)
+find_package(Boost REQUIRED)
 
 
 add_executable(k32w061_test k32w061_test.cpp ${CMAKE_SOURCE_DIR}/src/k32w061.cpp)
-target_include_directories(k32w061_test PRIVATE ${CMAKE_SOURCE_DIR}/src ${GTEST_INCLUDE_DIRS})
+target_include_directories(k32w061_test PRIVATE ${CMAKE_SOURCE_DIR}/src ${GTEST_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 if(COVERAGE)
   target_compile_options(k32w061_test PRIVATE "--coverage")
