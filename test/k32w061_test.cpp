@@ -547,9 +547,9 @@ MATCHER_P(FrameMemoryPayloadLengthEq, length, "") {
 }
 TEST_F(K32W061_FlashMemory, largePayloadIsSplitInto512byteChunks){
   std::vector<uint8_t> resp{0x00, 0x00, 0x09, 0x49, 0x00, 0xE8, 0x48, 0x38, 0xDE};
-  EXPECT_CALL(ftdi, writeData(AllOf(FrameMemoryAddressEq(1024), FrameMemoryPayloadLengthEq(10))) ).Times(1).WillOnce(Return(28));
-  EXPECT_CALL(ftdi, writeData(AllOf(FrameMemoryAddressEq(512), FrameMemoryPayloadLengthEq(512))) ).Times(1).WillOnce(Return(530));
-  EXPECT_CALL(ftdi, writeData(AllOf(FrameMemoryAddressEq(0), FrameMemoryPayloadLengthEq(512))) ).Times(1).WillOnce(Return(530));
+  EXPECT_CALL(ftdi, writeData(AllOf(FrameMemoryAddressEq(1024u), FrameMemoryPayloadLengthEq(10u))) ).Times(1).WillOnce(Return(28));
+  EXPECT_CALL(ftdi, writeData(AllOf(FrameMemoryAddressEq(512u), FrameMemoryPayloadLengthEq(512u))) ).Times(1).WillOnce(Return(530));
+  EXPECT_CALL(ftdi, writeData(AllOf(FrameMemoryAddressEq(0u), FrameMemoryPayloadLengthEq(512u))) ).Times(1).WillOnce(Return(530));
   EXPECT_CALL(ftdi, readData()).WillRepeatedly(Return(resp));
   std::vector<uint8_t> data(1034);
   for(unsigned int i=0;i<data.size();i++){
@@ -664,8 +664,58 @@ TEST_F(K32W061_GetDeviceInfo, failIsResponseTypeIsNotSuccess){
 
 TEST_F(K32W061_CloseMemory, callsReadAfterWrite){
   testing::Sequence s;
-  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(18));
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(9));
   EXPECT_CALL(ftdi, readData()).Times(1);
   dev.closeMemory(0);
 }
 
+TEST_F(K32W061_CloseMemory, verifyWriteFrameHeader){
+  std::vector<uint8_t> req{0x00, 0x00, 0x09, 0x4A};
+  EXPECT_CALL(ftdi, writeData(FrameHeaderEq(req))).Times(1);
+  
+  dev.closeMemory(0);
+}
+
+TEST_F(K32W061_CloseMemory, verifyWritePayload){
+  std::vector<uint8_t> payload{0x03};
+  EXPECT_CALL(ftdi, writeData(FramePayloadEq(payload))).Times(1);
+  
+  dev.closeMemory(3);
+}
+
+TEST_F(K32W061_CloseMemory, verifyWriteCrc){
+  std::vector<uint8_t> crc{0xC3, 0x65, 0x6B, 0x1D};
+  EXPECT_CALL(ftdi, writeData(FrameCrcEq(crc))).Times(1);
+  
+  dev.closeMemory(0);
+}
+
+TEST_F(K32W061_CloseMemory, failsIfWriteReturnsLessBytesThenFrameSize){
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(6));
+  auto ret = dev.closeMemory(0);
+  EXPECT_NE(ret, 0);
+}
+
+TEST_F(K32W061_CloseMemory, failsIfResponseCrcIsWrong){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x09, 0x4B, 0x00, 0xDA, 0x7E, 0x5A, 0x5D};
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(9));
+  EXPECT_CALL(ftdi, readData()).Times(1).WillOnce(Return(resp));
+  auto ret = dev.closeMemory(0);
+  EXPECT_NE(ret, 0);
+}
+
+TEST_F(K32W061_CloseMemory, failsIfResponseFrameTypeIsNot0x4B){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x09, 0x4C, 0x00, 0x95, 0x3F, 0xCC, 0x9B};
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(9));
+  EXPECT_CALL(ftdi, readData()).Times(1).WillOnce(Return(resp));
+  auto ret = dev.closeMemory(0);
+  EXPECT_NE(ret, 0);
+}
+
+TEST_F(K32W061_CloseMemory, failsIfResponseIsNotSuccess){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x09, 0x4B, 0x01, 0xAD, 0x79, 0x6A, 0xCA};
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(9));
+  EXPECT_CALL(ftdi, readData()).Times(1).WillOnce(Return(resp));
+  auto ret = dev.closeMemory(0);
+  EXPECT_NE(ret, 0);
+}

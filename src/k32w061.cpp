@@ -27,6 +27,8 @@ enum FrameType : uint8_t{
   CheckBlankMemoryResp = 0x45,
   WriteMemoryReq = 0x48,
   WriteMemoryResp = 0x49,
+  CloseMemoryReq = 0x4A,
+  CloseMemoryResp = 0x4B,
   EnableISPModeReq = 0x4E,
   EnableISPModeResp = 0x4F
 };
@@ -326,9 +328,31 @@ int K32W061::flashMemory(uint8_t handle, const std::vector<uint8_t>& data){
 }
 
 int K32W061::closeMemory(uint8_t handle){
-  std::vector<uint8_t> req;
-  dev.writeData(req);
-  dev.readData();
+  std::vector<uint8_t> req(9);
+  FrameHeader * header = reinterpret_cast<FrameHeader*>(req.data());
+  header->type = FrameType::CloseMemoryReq;
+  header->size = htons(0x09);
+
+  struct __attribute__((__packed__)) CloseMemoryHeader{
+    uint8_t handle;
+  };
+  CloseMemoryHeader * close_memory = reinterpret_cast<CloseMemoryHeader*>(req.data() + sizeof(FrameHeader));
+  close_memory->handle = handle;
+
+  auto crc = calculateCrc(req);
+  insertCrc(req, crc);
+
+  if(dev.writeData(req) != static_cast<signed>(req.size())){
+    return -1;
+  };
+  
+  auto resp = dev.readData();
+  if( resp.size() == 0 ||
+      calculateCrc(resp) != extractCrc(resp) ||
+      responseType(resp) != FrameType::CloseMemoryResp ||
+      !responseHasSuccessStatus(resp)){
+    return -1;
+  }
 
   return 0;
 }
