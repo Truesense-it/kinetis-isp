@@ -25,7 +25,7 @@ if(COVERAGE)
   )
 endif()
 
-target_compile_options(k32w061_test PRIVATE "-Wno-error=unused-parameter")
+target_compile_options(k32w061_test PRIVATE -Wno-error=unused-parameter -Wall -Werror -Wextra)
 target_link_libraries(k32w061_test PRIVATE gmock ${GTEST_LIBRARIES} ${GMOCK_BOTH_LIBRARIES} ${GCOV_LIBRARIES} Threads::Threads)
 
 gtest_discover_tests(k32w061_test
