@@ -11,7 +11,7 @@
 
 #include "ftdi.hpp"
 
-#include <ftdi.h> // libftdi header
+#include <libftdi1/ftdi.h> // libftdi header
 #include <memory>
 #include <vector>
 
