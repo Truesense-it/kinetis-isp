@@ -15,7 +15,7 @@
 
 class FTDIMock : public FTDI::Interface {
 public:
-  MOCK_METHOD2(open, int(const int vid, const int pid));
+  MOCK_METHOD2(open, void(const int vid, const int pid));
   MOCK_METHOD0(is_open, bool());
   MOCK_METHOD1(setCBUSPins, int(const FTDI::CBUSPins& pins));
   MOCK_METHOD0(diableCBUSMode, int());

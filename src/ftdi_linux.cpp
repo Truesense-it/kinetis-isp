@@ -19,42 +19,42 @@ FTDILinux::FTDILinux(){
 }
 
 FTDILinux::FTDILinux(const int vid, const int pid){
-  int ret = open(vid, pid);
-  if(ret < 0) throw std::runtime_error("Could not open FTDILinux device");
+  open(vid, pid);
 }
 
 FTDILinux::~FTDILinux(){
-  if(ftdi != NULL){
+  if(ftdi != nullptr){
     ftdi_usb_close(ftdi);
     ftdi_free(ftdi);
   }
 }
 
-int FTDILinux::open(const int vid, const int pid){
+void FTDILinux::open(const int vid, const int pid){
   ftdi = ftdi_new();
-  if(ftdi == NULL){
-    return -1;
+  if(ftdi == nullptr){
+    throw std::runtime_error("Could not create new FTDI instance");
   }
 
   /* Open FTDILinux device based on FT232R vendor & product IDs */
   if(ftdi_usb_open(ftdi, vid, pid) < 0) {
     ftdi_free(ftdi);
-    return -1;
+    ftdi=nullptr;
+    throw std::runtime_error("Could not open USB Device");
   }
 
   if(ftdi_set_baudrate(ftdi, 115200) < 0){
     ftdi_usb_close(ftdi);
     ftdi_free(ftdi);
-    return -1;
+    ftdi=nullptr;
+    throw std::runtime_error("Could not set baudrate to 115200 Baud/s");
   }
 
   if(ftdi_set_line_property(ftdi, BITS_8, STOP_BIT_1, NONE) <0){
     ftdi_usb_close(ftdi);
     ftdi_free(ftdi);
-    return -1;
+    ftdi=nullptr;
+    throw std::runtime_error("Could not set FTDI Line Properties to 8 Bit, 1 Stop bit and no parity");
   }
-
-  return 0;
 }
 
 bool FTDILinux::is_open(){

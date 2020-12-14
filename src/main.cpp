@@ -37,23 +37,18 @@ int main(int argc, const char* argv[]){
     return 0;
   }
 
-  FTDILinux ftdi = {};
-  auto ret = ftdi.open(0x0403, 0x6015);
-  if(ret < 0){
-    std::cerr << "Could not open Device 0403:6015"<< std::endl;
-    exit(EXIT_FAILURE);
-  }
-  K32W061 mcu(ftdi);
-  Application app(mcu, ftdi);
-
   try{
+    FTDILinux ftdi = {};
+    ftdi.open(0x0403, 0x6015);
+    K32W061 mcu(ftdi);
+    Application app(mcu, ftdi);
     app.enableISPMode();
-  if(vm.count("device-info") || vm.count("d")){
-    app.deviceInfo();
-  }
-  if(vm.count("erase") || vm.count("e")){
-    app.eraseMemory();
-  }
+    if(vm.count("device-info") || vm.count("d")){
+      app.deviceInfo();
+    }
+    if(vm.count("erase") || vm.count("e")){
+      app.eraseMemory();
+    }
   }catch(const std::exception& e){
     std::cerr << e.what() << std::endl;
     exit(EXIT_FAILURE);

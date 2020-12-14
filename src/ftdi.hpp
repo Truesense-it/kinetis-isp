@@ -27,7 +27,7 @@ namespace FTDI{
 
   class Interface{
     public:
-    virtual int open(const int vid, const int pid) = 0;
+    virtual void open(const int vid, const int pid) = 0;
     virtual bool is_open() = 0;
 
     virtual int setCBUSPins(const CBUSPins& pins) = 0;

@@ -21,7 +21,7 @@ public:
   FTDILinux(const int vid, const int pid);
   virtual ~FTDILinux();
 
-  int open(const int vid, const int pid);
+  void open(const int vid, const int pid);
   bool is_open();
 
   int setCBUSPins(const FTDI::CBUSPins& pins);
