@@ -10,41 +10,25 @@
 #define _K32W061_H_
 
 #include "ftdi.hpp"
+#include "mcu.h"
 
 #include <cstdint>
 #include <array>
 
-class K32W061 {
+class K32W061 : public MCU{
 public:
   K32W061(FTDI::Interface &dev);
   ~K32W061();
 
-  struct DeviceInfo{
-    uint32_t chipId;
-    uint32_t version;
-  };
+  static const int CHIP_ID_K32W061=0x88888888;
 
-  int enableISPMode();
-  DeviceInfo getDeviceInfo();
-  int eraseMemory(uint8_t handle);
-
-  enum MemoryID{
-    flash = 0x00,
-    psect = 0x01,
-    pflash = 0x02,
-    config = 0x03,
-    efuse = 0x04,
-    rom = 0x05,
-    ram0 = 0x06,
-    ram1 = 0x07
-  };
-  int getMemoryHandle(const MemoryID);
-
-  bool memoryIsErased(uint8_t handle);
-
-  int flashMemory(uint8_t handle, const std::vector<uint8_t>& data);
-
-  int closeMemory(uint8_t handle);
+  int enableISPMode() override;
+  DeviceInfo getDeviceInfo() override;
+  int eraseMemory(uint8_t handle) override;
+  int getMemoryHandle(const MemoryID) override;
+  bool memoryIsErased(uint8_t handle) override;
+  int flashMemory(uint8_t handle, const std::vector<uint8_t>& data) override;
+  int closeMemory(uint8_t handle) override;
 
 protected:
   void insertCrc(std::vector<uint8_t>& data, unsigned long crc) const;
