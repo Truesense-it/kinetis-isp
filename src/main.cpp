@@ -8,13 +8,34 @@
  /* SPDX-License-Identifier: BSD-2-Clause-Patent */
 #include "ftdi_linux.h"
 #include "k32w061.h"
+#include "application.h"
 
 #include <iostream>
-#include <unistd.h>
+#include <boost/program_options.hpp>
 
 #define CHIP_ID_K32W061 0x88888888
 
-int main(void){
+namespace po = boost::program_options;
+
+int main(int argc, const char* argv[]){
+
+  po::options_description desc("Options");
+  std::string interface{};
+  desc.add_options()
+    ("help,h", "Print this help Message")
+    ("device-info,d", "Show Device Information from Chip")
+    ("erase,e", "Erase Memory")
+    ("interface,i", po::value<std::string>(&interface), "Path to Interface /dev/ttyUSBX")
+  ;
+
+  po::variables_map vm;
+  po::store(po::parse_command_line(argc, argv, desc), vm);
+  po::notify(vm); 
+
+  if (vm.count("help") || vm.count("h")) {
+    std::cout << desc << std::endl;
+    return 0;
+  }
 
   FTDILinux ftdi = {};
   auto ret = ftdi.open(0x0403, 0x6015);
@@ -22,43 +43,21 @@ int main(void){
     std::cerr << "Could not open Device 0403:6015"<< std::endl;
     exit(EXIT_FAILURE);
   }
+  K32W061 mcu(ftdi);
+  Application app(mcu, ftdi);
 
-  FTDI::CBUSPins pins = {};
-  pins.outputCBUS0 = 0;
-  pins.outputCBUS1 = 0;
-  pins.outputCBUS2 = 0;
-  pins.outputCBUS3 = 0;
-  pins.modeCBUS0 = FTDI::CBUSMode::OUTPUT;
-  pins.modeCBUS1 = FTDI::CBUSMode::OUTPUT;
-  pins.modeCBUS2 = FTDI::CBUSMode::OUTPUT;
-  pins.modeCBUS3 = FTDI::CBUSMode::OUTPUT;
-  ftdi.setCBUSPins(pins);
-  pins.outputCBUS2 = 1;
-  usleep(1000);
-  ftdi.setCBUSPins(pins);
-  usleep(10000);
-  ftdi.diableCBUSMode();
-
-  K32W061 device(ftdi);
-  ret = device.enableISPMode();
-  if(ret != 0){
-    std::cerr << "Could not enable ISP Mode" << std::endl;
+  try{
+    app.enableISPMode();
+  if(vm.count("device-info") || vm.count("d")){
+    app.deviceInfo();
+  }
+  if(vm.count("erase") || vm.count("e")){
+    app.eraseMemory();
+  }
+  }catch(const std::exception& e){
+    std::cerr << e.what() << std::endl;
     exit(EXIT_FAILURE);
   }
-  K32W061::DeviceInfo dev_info = device.getDeviceInfo();
-  switch(dev_info.chipId){
-    case CHIP_ID_K32W061:{
-      std::cout << "Found Chip K32W061" << std::endl;
-      break;
-    }
-    default:{
-      std::cerr << "Found unknown chip ID " << dev_info.chipId << std::endl;
-      exit(EXIT_FAILURE);
-    }
-  }
-  std::cout << "Chip Version " << dev_info.version << std::endl;
   
-
-
-  return 0;
+  return EXIT_SUCCESS;
 }
