@@ -25,17 +25,7 @@ MATCHER_P(MemoryIdIs, id, "") { return arg.at(4) == id; }
 MATCHER_P(FrameTypeIs, type, "") { return arg.at(3) == type; }
 MATCHER_P(FrameHeaderEq, header, "") { return std::equal(header.begin(), header.end(), arg.begin());}
 MATCHER_P(FramePayloadEq, payload, "") {return std::equal(payload.begin(), payload.end(), std::begin(arg)+4);}
-MATCHER_P(FrameCrcEq, crc, "") {
-  for(auto val: crc){
-    std::cout << std::hex << (unsigned)val << " ";
-  }
-  std::cout << std::endl;
-  for(auto val: arg){
-    std::cout << std::hex << (unsigned)val << " ";
-  }
-  std::cout << std::endl;
-  return std::equal(crc.begin(), crc.end(), std::end(arg)-4);
-  }
+MATCHER_P(FrameCrcEq, crc, "") {return std::equal(crc.begin(), crc.end(), std::end(arg)-4);}
 
 
 
@@ -144,6 +134,14 @@ TEST_F(K32W061_EnableISPMode, failsIfresponseCrcIsWrong){
   EXPECT_CALL(ftdi, readData()).WillRepeatedly(Return(response));
   auto ret = dev.enableISPMode();
   EXPECT_NE(ret, 0);
+}
+
+TEST_F(K32W061_EnableISPMode, insertsUnlockKeyIntoPayload){
+  std::vector<uint8_t> req{0x00, 0x00, 0x19, 0x4E, 0x01, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x4B, 0x17, 0x03, 0xDE};
+
+  EXPECT_CALL(ftdi, writeData(req));
+  const std::vector<uint8_t> unlock_key={0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+  dev.enableISPMode(unlock_key);
 }
 
 TEST_F(K32W061_OpenMemory, callsWriteAfterRead){

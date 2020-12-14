@@ -52,7 +52,8 @@ void Application::enableISPMode(){
   usleep(10000);
   ftdi.diableCBUSMode();
 
-  auto ret = mcu.enableISPMode();
+  const std::vector<uint8_t> unlock_key={0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+  auto ret = mcu.enableISPMode(unlock_key);
   if(ret != 0){
     throw std::runtime_error("Could not enable ISP Mode");
   }

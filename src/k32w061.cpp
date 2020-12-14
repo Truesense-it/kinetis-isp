@@ -85,18 +85,24 @@ K32W061::~K32W061(){
 
 }
 
-int K32W061::enableISPMode(){
-  std::vector<uint8_t>req(9);
+int K32W061::enableISPMode(const std::vector<uint8_t> key){
+  std::vector<uint8_t>req(9+key.size());
   req[0] = 0;
   req[1] = 0;
-  req[2] = 9;
+  req[2] = 9 + key.size();
   req[3] = 0x4e;
-  req[4] = 0;
+  
+  if(key.size() == 0){
+    req[4] = 0x00;
+  }else{
+    req[4] = 0x01;
+    std::copy(key.begin(), key.end(), req.begin()+5);
+  }
 
   auto crc = calculateCrc(req);
   insertCrc(req, crc);
   int count = dev.writeData(req);
-  if(count != 9){
+  if(count != 9+static_cast<int>(key.size())){
     return -1;
   }
 

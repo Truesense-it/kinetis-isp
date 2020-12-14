@@ -23,7 +23,7 @@ class MCU
     ram1 = 0x07
   };
 
-  virtual int enableISPMode() = 0;
+  virtual int enableISPMode(const std::vector<uint8_t> key) = 0;
   virtual DeviceInfo getDeviceInfo() = 0;
   virtual int eraseMemory(uint8_t handle) = 0;
   virtual int getMemoryHandle(const MemoryID) = 0;

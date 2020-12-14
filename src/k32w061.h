@@ -22,7 +22,7 @@ public:
 
   static const int CHIP_ID_K32W061=0x88888888;
 
-  int enableISPMode() override;
+  int enableISPMode(const std::vector<uint8_t> key={}) override;
   DeviceInfo getDeviceInfo() override;
   int eraseMemory(uint8_t handle) override;
   int getMemoryHandle(const MemoryID) override;
