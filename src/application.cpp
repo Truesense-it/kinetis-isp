@@ -79,3 +79,20 @@ void Application::eraseMemory(MCU::MemoryID id){
     throw std::runtime_error("Closing Memory handle failed");
   }
 }
+
+void Application::flashFirmware(const std::vector<uint8_t>& fw){
+  auto handle = mcu.getMemoryHandle(MCU::MemoryID::flash);
+  if(handle < 0){
+    throw std::runtime_error("Could not get Handle for Memory");
+  }
+
+  auto ret = mcu.flashMemory(handle, fw);
+  if(ret != 0){
+    throw std::runtime_error(std::string("Only ") + std::to_string(ret) + std::string(" bytes written of ") + std::to_string(fw.size()) + std::string(" bytes"));
+  }
+
+  ret = mcu.closeMemory(handle);
+  if(ret < 0){
+    throw std::runtime_error("Closing Memory handle failed");
+  }
+}

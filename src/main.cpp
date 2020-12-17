@@ -9,6 +9,7 @@
 #include "ftdi_linux.h"
 #include "k32w061.h"
 #include "application.h"
+#include "firmware_reader.h"
 
 #include <iostream>
 #include <boost/program_options.hpp>
@@ -41,14 +42,12 @@ MCU::MemoryID stringToMemID(const std::string str){
 int main(int argc, const char* argv[]){
 
   po::options_description desc("Options");
-  std::string interface{};
-  std::string eraseMemoryName{};
   desc.add_options()
     ("help,h", "Print this help Message")
     ("device-info,d", "Show Device Information from Chip")
-    ("erase,e", po::value<std::string>(&eraseMemoryName), "Erase Memory. Available Types are: FLASH, PSECT, PFLASH, CONFIG, EFUSE, ROM")
-    ("firmware,f", "Path Firmware Binary")
-    ("interface,i", po::value<std::string>(&interface), "Path to Interface /dev/ttyUSBX")
+    ("erase,e", po::value<std::string>(), "Erase Memory. Available Types are: FLASH, PSECT, PFLASH, CONFIG, EFUSE, ROM")
+    ("firmware,f", po::value<std::string>(), "Path Firmware Binary")
+    ("interface,i", po::value<std::string>(), "Path to Interface /dev/ttyUSBX")
   ;
 
   try{
@@ -71,8 +70,14 @@ int main(int argc, const char* argv[]){
       app.deviceInfo();
     }
 
-    if(vm.count("erase") || vm.count("e")){
-      app.eraseMemory(stringToMemID(eraseMemoryName));
+    if(vm.count("erase")){
+      app.eraseMemory(stringToMemID(vm["erase"].as<std::string>()));
+    }
+
+    if(vm.count("firmware")){
+      std::ifstream ifs(vm["firmware"].as<std::string>(), std::ios::binary);
+      FirmwareReader fw(ifs);
+      app.flashFirmware(fw.data());
     }
   }catch(const std::exception& e){
     std::cerr << e.what() << std::endl;
