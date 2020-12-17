@@ -13,11 +13,11 @@ include(GoogleTest)
 find_package(Boost REQUIRED)
 
 
-add_executable(k32w061_test k32w061_test.cpp ${CMAKE_SOURCE_DIR}/src/k32w061.cpp)
-target_include_directories(k32w061_test PRIVATE ${CMAKE_SOURCE_DIR}/src ${GTEST_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+add_executable(utests k32w061_test.cpp firmware_reader_test.cpp ${CMAKE_SOURCE_DIR}/src/k32w061.cpp ${CMAKE_SOURCE_DIR}/src/firmware_reader.cpp)
+target_include_directories(utests PRIVATE ${CMAKE_SOURCE_DIR}/src ${GTEST_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 if(COVERAGE)
-  target_compile_options(k32w061_test PRIVATE "--coverage")
+  target_compile_options(utests PRIVATE "--coverage")
   set(GCOV_LIBRARIES PRIVATE gcov)
 
   add_custom_target(coverage
@@ -25,8 +25,8 @@ if(COVERAGE)
   )
 endif()
 
-target_compile_options(k32w061_test PRIVATE -Wno-error=unused-parameter -Wall -Werror -Wextra)
-target_link_libraries(k32w061_test PRIVATE gmock ${GTEST_LIBRARIES} ${GMOCK_BOTH_LIBRARIES} ${GCOV_LIBRARIES} Threads::Threads)
+target_compile_options(utests PRIVATE -Wno-error=unused-parameter -Wall -Werror -Wextra)
+target_link_libraries(utests PRIVATE gmock ${GTEST_LIBRARIES} ${GMOCK_BOTH_LIBRARIES} ${GCOV_LIBRARIES} Threads::Threads)
 
-gtest_discover_tests(k32w061_test
+gtest_discover_tests(utests
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
