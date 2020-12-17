@@ -22,7 +22,7 @@ public:
 
   void enableISPMode();
   void deviceInfo();
-  void eraseMemory();
+  void eraseMemory(MCU::MemoryID id);
 
 private:
   MCU& mcu;

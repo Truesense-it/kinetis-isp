@@ -17,37 +17,62 @@
 
 namespace po = boost::program_options;
 
+MCU::MemoryID stringToMemID(const std::string str){
+  MCU::MemoryID id;
+  if(str == "FLASH"){
+    id = MCU::MemoryID::flash;
+  }else if(str == "PSECT"){
+    id = MCU::MemoryID::psect;
+  }else if(str == "PFLASH"){
+    id = MCU::MemoryID::pflash;
+  }else if(str == "CONFIG"){
+    id = MCU::MemoryID::config;
+  }else if(str == "EFUSE"){
+    id = MCU::MemoryID::efuse;
+  }else if(str == "ROM"){
+    id = MCU::MemoryID::rom;
+  }else{
+    throw std::runtime_error(std::string("Unknown Memory Type \"") + str + std::string("\""));
+  }
+
+  return id;
+}
+
 int main(int argc, const char* argv[]){
 
   po::options_description desc("Options");
   std::string interface{};
+  std::string eraseMemoryName{};
   desc.add_options()
     ("help,h", "Print this help Message")
     ("device-info,d", "Show Device Information from Chip")
-    ("erase,e", "Erase Memory")
+    ("erase,e", po::value<std::string>(&eraseMemoryName), "Erase Memory. Available Types are: FLASH, PSECT, PFLASH, CONFIG, EFUSE, ROM")
+    ("firmware,f", "Path Firmware Binary")
     ("interface,i", po::value<std::string>(&interface), "Path to Interface /dev/ttyUSBX")
   ;
 
-  po::variables_map vm;
-  po::store(po::parse_command_line(argc, argv, desc), vm);
-  po::notify(vm); 
-
-  if (vm.count("help") || vm.count("h")) {
-    std::cout << desc << std::endl;
-    return 0;
-  }
-
   try{
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm); 
+
+    if (vm.count("help") || vm.count("h")) {
+      std::cout << desc << std::endl;
+      return 0;
+    }
+
     FTDILinux ftdi = {};
     ftdi.open(0x0403, 0x6015);
     K32W061 mcu(ftdi);
     Application app(mcu, ftdi);
     app.enableISPMode();
+
     if(vm.count("device-info") || vm.count("d")){
       app.deviceInfo();
     }
+
     if(vm.count("erase") || vm.count("e")){
-      app.eraseMemory();
+      app.eraseMemory(stringToMemID(eraseMemoryName));
     }
   }catch(const std::exception& e){
     std::cerr << e.what() << std::endl;

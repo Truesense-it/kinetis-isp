@@ -59,14 +59,14 @@ void Application::enableISPMode(){
   }
 }
 
-void Application::eraseMemory(){
-  auto handle = mcu.getMemoryHandle(MCU::MemoryID::flash);
+void Application::eraseMemory(MCU::MemoryID id){
+  auto handle = mcu.getMemoryHandle(id);
   if(handle < 0){
-    throw std::runtime_error("Could not get Handle for FLash Memory");
+    throw std::runtime_error("Could not get Handle for Memory");
   }
   auto ret = mcu.eraseMemory(handle);
   if(ret < 0){
-    throw std::runtime_error("Could not erase Flash Memory");
+    throw std::runtime_error("Could not erase Memory");
   }
 
   ret = mcu.memoryIsErased(handle);
