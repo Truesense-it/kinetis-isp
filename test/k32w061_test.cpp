@@ -46,6 +46,7 @@ class K32W061_EraseMemory : public K32W061_EnableISPMode {};
 class K32W061_MemoryIsErased : public K32W061_EnableISPMode {};
 class K32W061_FlashMemory : public K32W061_EnableISPMode {};
 class K32W061_CloseMemory : public K32W061_EnableISPMode {};
+class K32W061_Reset : public K32W061_EnableISPMode {};
 
 TEST_F(K32W061_EnableISPMode, callsReadAfterWrite){
   testing::Sequence s1;
@@ -715,5 +716,56 @@ TEST_F(K32W061_CloseMemory, failsIfResponseIsNotSuccess){
   EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(9));
   EXPECT_CALL(ftdi, readData()).Times(1).WillOnce(Return(resp));
   auto ret = dev.closeMemory(0);
+  EXPECT_NE(ret, 0);
+}
+
+TEST_F(K32W061_Reset, callsReadAfterWrite){
+  testing::Sequence s;
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(8));
+  EXPECT_CALL(ftdi, readData()).Times(1);
+  dev.reset();
+}
+
+TEST_F(K32W061_Reset, verifyWriteFrameHeader){
+  std::vector<uint8_t> req{0x00, 0x00, 0x08, 0x14};
+  EXPECT_CALL(ftdi, writeData(FrameHeaderEq(req))).Times(1);
+  
+  dev.reset();
+}
+
+TEST_F(K32W061_Reset, verifyWriteCrc){
+  std::vector<uint8_t> crc{0xF3, 0x47, 0x81, 0x69};
+  EXPECT_CALL(ftdi, writeData(FrameCrcEq(crc))).Times(1);
+  
+  dev.reset();
+}
+
+TEST_F(K32W061_Reset, failsIfWriteReturnsLessBytesThenFrameSize){
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(6));
+  auto ret = dev.reset();
+  EXPECT_NE(ret, 0);
+}
+
+TEST_F(K32W061_Reset, failsIfResponseCrcIsWrong){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x09, 0x15, 0x00, 0xFE, 0x46, 0x2A, 0x87};
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(8));
+  EXPECT_CALL(ftdi, readData()).Times(1).WillOnce(Return(resp));
+  auto ret = dev.reset();
+  EXPECT_NE(ret, 0);
+}
+
+TEST_F(K32W061_Reset, failsIfResponseFrameTypeIsNot0x15){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x09, 0x16, 0x00, 0xD5, 0x6B, 0x79, 0x45};
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(8));
+  EXPECT_CALL(ftdi, readData()).Times(1).WillOnce(Return(resp));
+  auto ret = dev.reset();
+  EXPECT_NE(ret, 0);
+}
+
+TEST_F(K32W061_Reset, failsIfResponseIsNotSuccess){
+  std::vector<uint8_t> resp{0x00, 0x00, 0x09, 0x15, 0x01, 0x89, 0x41, 0x1A, 0x10};
+  EXPECT_CALL(ftdi, writeData(_)).Times(1).WillOnce(Return(8));
+  EXPECT_CALL(ftdi, readData()).Times(1).WillOnce(Return(resp));
+  auto ret = dev.reset();
   EXPECT_NE(ret, 0);
 }

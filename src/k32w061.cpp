@@ -19,6 +19,7 @@
 
 enum FrameType : uint8_t{
   ResetReq = 0x14,
+  ResetResp = 0x15,
   ExecuteReq = 0x21,
   GetDeviceInfoReq = 0x32,
   GetDeviceInfoResp = 0x33,
@@ -361,6 +362,32 @@ int K32W061::closeMemory(uint8_t handle){
       calculateCrc(resp) != extractCrc(resp) ||
       responseType(resp) != FrameType::CloseMemoryResp ||
       !responseHasSuccessStatus(resp)){
+    return -1;
+  }
+
+  return 0;
+}
+
+int K32W061::reset()
+{
+  std::vector<uint8_t> req(8);
+  FrameHeader * header = reinterpret_cast<FrameHeader*>(req.data());
+  header->type = FrameType::ResetReq;
+  header->size = htons(0x08);
+
+  auto crc= calculateCrc(req);
+  insertCrc(req, crc);
+
+  if(dev.writeData(req) != 8){
+    return -1;
+  }
+
+  auto resp = dev.readData();
+  if( resp.size() == 0 ||
+      extractCrc(resp) != calculateCrc(resp) ||
+      responseType(resp) != FrameType::ResetResp ||
+      !responseHasSuccessStatus(resp))
+  {
     return -1;
   }
 
