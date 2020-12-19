@@ -5,12 +5,8 @@
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 find_package(GTest REQUIRED)
 find_package(GMock REQUIRED)
-find_package(Threads REQUIRED)
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads REQUIRED)
 
 include(GoogleTest)
-find_package(Boost REQUIRED)
 
 
 add_executable(utests k32w061_test.cpp firmware_reader_test.cpp ${CMAKE_SOURCE_DIR}/src/k32w061.cpp ${CMAKE_SOURCE_DIR}/src/firmware_reader.cpp)
@@ -26,7 +22,7 @@ if(COVERAGE)
 endif()
 
 target_compile_options(utests PRIVATE -Wno-error=unused-parameter -Wall -Werror -Wextra)
-target_link_libraries(utests PRIVATE gmock ${GTEST_LIBRARIES} ${GMOCK_BOTH_LIBRARIES} ${GCOV_LIBRARIES} Threads::Threads)
+target_link_libraries(utests PRIVATE gmock ${GTEST_LIBRARIES} ${GMOCK_BOTH_LIBRARIES} ${GCOV_LIBRARIES} ${Boost_LIBRARIES} Threads::Threads)
 
 gtest_discover_tests(utests
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})

@@ -15,6 +15,9 @@ if(LTO_SUPPORTED)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
+find_package(Boost COMPONENTS program_options log log_setup REQUIRED)
+find_package(Threads REQUIRED)
+
 add_subdirectory(src)
 if(BUILD_TESTING)
   enable_testing()

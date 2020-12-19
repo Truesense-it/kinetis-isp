@@ -9,8 +9,11 @@
 #include "k32w061.h"
 #include <iostream>
 #include <unistd.h>
-#include <boost/crc.hpp>
 #include <arpa/inet.h>
+#include <boost/crc.hpp>
+#include <boost/log/core.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/trivial.hpp>
 
 #define CRC_SIZE 4
 
@@ -308,6 +311,7 @@ int K32W061::flashMemory(uint8_t handle, const std::vector<uint8_t>& data){
     auto crc = calculateCrc(req);
     insertCrc(req, crc);
 
+    BOOST_LOG_TRIVIAL(info) << "Write " << chunk_size << " Bytes at offset " << offset << std::endl;
     auto ret = dev.writeData(req);
     if(ret != (signed)req.size()){
       return -1;
