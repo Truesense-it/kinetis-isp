@@ -68,7 +68,7 @@ int FTDILinux::setCBUSPins(const FTDI::CBUSPins& pins){
   return ret;
 }
 
-int FTDILinux::diableCBUSMode(){
+int FTDILinux::disableCBUSMode(){
   return ftdi_disable_bitbang(ftdi); 
 }
 

@@ -25,7 +25,7 @@ public:
   bool is_open();
 
   int setCBUSPins(const FTDI::CBUSPins& pins);
-  int diableCBUSMode();
+  int disableCBUSMode();
 
   int writeData(std::vector<uint8_t> data);
   std::vector<uint8_t> readData();

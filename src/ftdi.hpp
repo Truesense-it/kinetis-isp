@@ -31,7 +31,7 @@ namespace FTDI{
     virtual bool is_open() = 0;
 
     virtual int setCBUSPins(const CBUSPins& pins) = 0;
-    virtual int diableCBUSMode() = 0;
+    virtual int disableCBUSMode() = 0;
 
     virtual int writeData(std::vector<uint8_t> data) = 0;
     virtual std::vector<uint8_t> readData() = 0;

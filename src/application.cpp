@@ -55,7 +55,7 @@ void Application::enableISPMode(){
   ftdi.setCBUSPins(pins);
   usleep(10000);
   BOOST_LOG_TRIVIAL(info) <<  "Disable CBUS Mode";
-  ftdi.diableCBUSMode();
+  ftdi.disableCBUSMode();
   usleep(10000);
 
   const std::vector<uint8_t> unlock_key={0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};

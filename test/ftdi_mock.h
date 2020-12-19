@@ -18,7 +18,7 @@ public:
   MOCK_METHOD2(open, void(const int vid, const int pid));
   MOCK_METHOD0(is_open, bool());
   MOCK_METHOD1(setCBUSPins, int(const FTDI::CBUSPins& pins));
-  MOCK_METHOD0(diableCBUSMode, int());
+  MOCK_METHOD0(disableCBUSMode, int());
 
   MOCK_METHOD1(writeData, int(std::vector<uint8_t> data));
   MOCK_METHOD0(readData, std::vector<uint8_t>());
