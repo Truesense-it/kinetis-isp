@@ -10,9 +10,9 @@ include:
   - template: Code-Quality.gitlab-ci.yml
 
 before_script:
-  - apt-get update -qq && apt-get install -y cmake ninja-build libgtest-dev libgmock-dev libftdi1-dev libboost-dev libboost-program-options-dev
+  - apt-get update -qq && apt-get install -y cmake ninja-build libgtest-dev libgmock-dev libftdi1-dev libboost-dev libboost-program-options-dev libboost-log-dev
 
-build:gcc:
+build:gcc:  
   image: "gcc:10"
   stage: build
   script:
