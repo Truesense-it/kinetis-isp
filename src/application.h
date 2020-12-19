@@ -24,6 +24,7 @@ public:
   void deviceInfo();
   void eraseMemory(MCU::MemoryID id);
   void flashFirmware(const std::vector<uint8_t>& fw);
+  void reset();
 
 private:
   MCU& mcu;

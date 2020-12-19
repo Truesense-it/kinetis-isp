@@ -113,3 +113,10 @@ void Application::flashFirmware(const std::vector<uint8_t>& fw){
     throw std::runtime_error("Closing Memory handle failed");
   }
 }
+
+void Application::reset(){
+  auto ret = mcu.reset();
+  if(ret != 0){
+    throw std::runtime_error("Could not reset device");
+  }
+}

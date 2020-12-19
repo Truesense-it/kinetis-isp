@@ -57,6 +57,7 @@ int main(int argc, const char* argv[]){
     ("device-info,d", "Show Device Information from Chip")
     ("erase,e", po::value<std::string>(), "Erase Memory. Available Types are: FLASH, PSECT, PFLASH, CONFIG, EFUSE, ROM")
     ("firmware,f", po::value<std::string>(), "Path Firmware Binary")
+    ("reset,r", "Reset device via ISP command")
     ("interface,i", po::value<std::string>(), "Path to Interface /dev/ttyUSBX")
     ("verbose,v", "Enable Verbose Output")
   ;
@@ -105,6 +106,12 @@ int main(int argc, const char* argv[]){
       FirmwareReader fw(ifs);
       BOOST_LOG_TRIVIAL(info) << "Flash Firmware";
       app.flashFirmware(fw.data());
+      BOOST_LOG_TRIVIAL(info) << "Success";
+    }
+
+    if(vm.count("reset")){
+      BOOST_LOG_TRIVIAL(info) << "Reset device";
+      app.reset();
       BOOST_LOG_TRIVIAL(info) << "Success";
     }
   }catch(const std::exception& e){
