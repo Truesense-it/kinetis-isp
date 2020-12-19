@@ -4,15 +4,19 @@
 
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 project(nxp-isp)
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.7)
 
 option(COVERAGE "Enable creation of Unit test coverage data" OFF)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-include(CheckIPOSupported)
-check_ipo_supported(RESULT LTO_SUPPORTED OUTPUT error)
-if(LTO_SUPPORTED)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+if(${CMAKE_VERSION} VERSION_LESS "3.9.4") 
+    message("No LTO Support in old CMake")
+else()
+  include(CheckIPOSupported)
+  check_ipo_supported(RESULT LTO_SUPPORTED OUTPUT error)
+  if(LTO_SUPPORTED)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+  endif()
 endif()
 
 add_definitions(-DBOOST_LOG_DYN_LINK)

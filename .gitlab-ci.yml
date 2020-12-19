@@ -9,12 +9,31 @@ stages:
 include:
   - template: Code-Quality.gitlab-ci.yml
 
+.debian_install: &debian_install
+  before_script:
+    - apt-get update -qq && apt-get install -y cmake ninja-build g++ libgtest-dev libgmock-dev libftdi1-dev libboost-dev libboost-program-options-dev libboost-log-dev
+
+.debian_utest: &debian_utest
+  stage: test
+  script:
+    - cd build
+    - ctest --output-on-failure
+
+debian:9:  
+  image: "debian:9"
+  before_script:
+    - apt-get update -qq && apt-get install -y cmake ninja-build g++ libftdi1-dev libboost-dev libboost-program-options-dev libboost-log-dev
+  stage: build
+  script:
+    - mkdir -p build
+    - cd build
+    - cmake -GNinja -DCOVERAGE=ON ..
+    - ninja
 
 debian:10:  
   image: "debian:10"
+  <<: *debian_install
   stage: build
-  before_script:
-    - apt-get update -qq && apt-get install -y cmake ninja-build g++ libgtest-dev libgmock-dev libftdi1-dev libboost-dev libboost-program-options-dev libboost-log-dev
   script:
     - mkdir -p build
     - cd build
@@ -24,10 +43,21 @@ debian:10:
     paths:
       - build/
 
-opensuse:tumbleweed:
-  image: opensuse/tumbleweed
+unit_test:debian-10:
+  image: "debian:10"
+  <<: *debian_install
+  <<: *debian_utest
+  dependencies:
+    - debian:10
+
+
+.opensuse_install: &opensuse_install
   before_script:
     - zypper refresh && zypper install --no-confirm boost-devel ninja cmake gcc-c++ gmock gtest libftdi1-devel libboost_program_options-devel libboost_log-devel libboost_thread-devel
+
+opensuse:tumbleweed:
+  image: opensuse/tumbleweed
+  <<: *opensuse_install
   stage: build
   script:
     - mkdir -p build
@@ -38,17 +68,9 @@ opensuse:tumbleweed:
     paths:
       - build/
 
-unit_test:debian-10:
-  image: "debian:10"
-  stage: test
-  script:
-    - cd build
-    - ctest --output-on-failure
-  dependencies:
-    - debian:10
-
 unit_test:opensuse-tumbleweed:
   image: "opensuse/tumbleweed"
+  <<: *opensuse_install
   stage: test
   script:
     - cd build
