@@ -20,7 +20,7 @@ public:
   K32W061(FTDI::Interface &dev);
   ~K32W061();
 
-  static const int CHIP_ID_K32W061=0x88888888;
+  static const unsigned int CHIP_ID_K32W061=0x88888888;
 
   int enableISPMode(const std::vector<uint8_t> key={}) override;
   DeviceInfo getDeviceInfo() override;
