@@ -20,8 +20,11 @@ debian:10:
     - cd build
     - cmake -GNinja -DCOVERAGE=ON -DBUILD_TESTING=ON ..
     - ninja
+  artifacts:
+    paths:
+      - build/
 
-opensuse:tumblewee:
+opensuse:tumbleweed:
   image: opensuse/tumbleweed
   before_script:
     - zypper refresh && zypper install --no-confirm boost-devel ninja cmake gcc-c++ gmock gtest libftdi1-devel libboost_program_options-devel libboost_log-devel libboost_thread-devel
@@ -31,10 +34,24 @@ opensuse:tumblewee:
     - cd build
     - cmake -GNinja -DCOVERAGE=ON -DBUILD_TESTING=ON ..
     - ninja 
+  artifacts:
+    paths:
+      - build/
 
-unit_test:
-  image: "gcc:10"
+unit_test:debian-10:
+  image: "debian:10"
   stage: test
   script:
     - cd build
     - ctest --output-on-failure
+  dependencies:
+    - debian:10
+
+unit_test:opensuse-tumbleweed:
+  image: "opensuse/tumbleweed"
+  stage: test
+  script:
+    - cd build
+    - ctest --output-on-failure
+  dependencies:
+    - opensuse:tumbleweed
