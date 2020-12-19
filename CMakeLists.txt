@@ -24,6 +24,10 @@ add_definitions(-DBOOST_LOG_DYN_LINK)
 find_package(Boost COMPONENTS program_options log log_setup REQUIRED)
 find_package(Threads REQUIRED)
 
+if(${CMAKE_INSTALL_PREFIX} STREQUAL "")
+  set(CMAKE_INSTALL_PREFIX "/usr/")
+endif()
+
 add_subdirectory(src)
 if(BUILD_TESTING)
   enable_testing()

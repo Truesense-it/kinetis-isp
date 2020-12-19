@@ -14,3 +14,6 @@ get_target_property(VERSION ${PROJECT_NAME} VERSION)
 target_compile_definitions(${PROJECT_NAME} PRIVATE ${LIBFTDI_DEFINITIONS} -DVERSION=\"${VERSION}\")
 target_include_directories(${PROJECT_NAME} PRIVATE ${LIBFTDI_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 target_compile_options(${PROJECT_NAME} PRIVATE -Wno-error=unused-parameter -Wall -Werror -Wextra $<$<CONFIG:DEBUG>:-O0 -g3>)
+
+install(TARGETS ${PROJECT_NAME}
+        RUNTIME DESTINATION bin)
