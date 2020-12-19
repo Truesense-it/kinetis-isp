@@ -67,6 +67,7 @@ int main(int argc, const char* argv[]){
     po::notify(vm); 
 
     if (vm.count("help") || vm.count("h")) {
+      std::cout << "nxp-isp Version " << VERSION << std::endl;
       std::cout << desc << std::endl;
       return 0;
     }
