@@ -82,7 +82,9 @@ int main(int argc, const char* argv[]){
 
     FTDILinux ftdi = {};
     BOOST_LOG_TRIVIAL(info) <<  "Open FTDI Device " << vm["interface"].as<std::string>();
-    auto [vid, pid] = VIDPIDReader::getVidPidForDev(vm["interface"].as<std::string>());
+    int vid = 0;
+    int pid = 0;
+    std::tie(vid, pid) = VIDPIDReader::getVidPidForDev(vm["interface"].as<std::string>());
     ftdi.open(vid, pid);
     K32W061 mcu(ftdi);
     Application app(mcu, ftdi);

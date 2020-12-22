@@ -3,7 +3,9 @@
 # This code is licensed under BSD + Patent (see LICENSE.txt for full license text)
 
 # SPDX-License-Identifier: BSD-2-Clause-Patent
-set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(LibFTDI1 NO_MODULE REQUIRED)
 
