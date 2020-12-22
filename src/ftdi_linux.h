@@ -31,6 +31,6 @@ public:
   std::vector<uint8_t> readData();
 
 private:
-  struct ftdi_context * ftdi;
+  struct ftdi_context * ftdi = nullptr;
 };
 #endif /* _FTDI_HPP_ */
