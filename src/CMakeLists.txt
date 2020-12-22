@@ -3,11 +3,11 @@
 # This code is licensed under BSD + Patent (see LICENSE.txt for full license text)
 
 # SPDX-License-Identifier: BSD-2-Clause-Patent
-set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_STANDARD 17)
 
 find_package(LibFTDI1 NO_MODULE REQUIRED)
 
-add_executable(${PROJECT_NAME} main.cpp ftdi_linux.cpp application.cpp k32w061.cpp firmware_reader.cpp)
+add_executable(${PROJECT_NAME} main.cpp ftdi_linux.cpp application.cpp k32w061.cpp firmware_reader.cpp vid_pid_reader.cpp)
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 0.0.1)
 target_link_libraries(${PROJECT_NAME} ${LIBFTDI_LIBRARIES} ${Boost_LIBRARIES} Threads::Threads)
 get_target_property(VERSION ${PROJECT_NAME} VERSION)

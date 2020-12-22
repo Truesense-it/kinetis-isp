@@ -10,6 +10,7 @@
 #include "k32w061.h"
 #include "application.h"
 #include "firmware_reader.h"
+#include "vid_pid_reader.h"
 
 #include <iostream>
 #include <boost/program_options.hpp>
@@ -22,7 +23,6 @@
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/sources/severity_logger.hpp>
 #include <boost/log/sources/record_ostream.hpp>
-// #include <boost/log/utility/setup/file.hpp>
 
 #define CHIP_ID_K32W061 0x88888888
 
@@ -58,7 +58,7 @@ int main(int argc, const char* argv[]){
     ("erase,e", po::value<std::string>(), "Erase Memory. Available Types are: FLASH, PSECT, PFLASH, CONFIG, EFUSE, ROM")
     ("firmware,f", po::value<std::string>(), "Path Firmware Binary")
     ("reset,r", "Reset device via ISP command")
-    ("interface,i", po::value<std::string>(), "Path to Interface /dev/ttyUSBX")
+    ("interface,i", po::value<std::string>()->default_value("/dev/ttyUSB0"), "Path to Interface /dev/ttyUSBX. If not specified defaults to /dev/ttyUSB0")
     ("verbose,v", "Enable Verbose Output")
   ;
 
@@ -81,8 +81,9 @@ int main(int argc, const char* argv[]){
     }
 
     FTDILinux ftdi = {};
-    BOOST_LOG_TRIVIAL(info) <<  "Open FTDI Device 0403:6015";
-    ftdi.open(0x0403, 0x6015);
+    BOOST_LOG_TRIVIAL(info) <<  "Open FTDI Device " << vm["interface"].as<std::string>();
+    auto [vid, pid] = VIDPIDReader::getVidPidForDev(vm["interface"].as<std::string>());
+    ftdi.open(vid, pid);
     K32W061 mcu(ftdi);
     Application app(mcu, ftdi);
     BOOST_LOG_TRIVIAL(info) <<  "Enable ISP Mode";
