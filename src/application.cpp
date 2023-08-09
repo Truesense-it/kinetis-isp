@@ -25,6 +25,7 @@ Application::~Application()
 void Application::deviceInfo(){
   BOOST_LOG_TRIVIAL(info) <<  "Get Device Information";
   K32W061::DeviceInfo dev_info = mcu.getDeviceInfo();
+  std::cout << "Chip ID 0x" << std::hex << dev_info.chipId << std::endl;
   switch(dev_info.chipId){
     case K32W061::CHIP_ID_K32W061:{
       std::cout << "Found Chip K32W061" << std::endl;
@@ -119,4 +120,12 @@ void Application::reset(){
   if(ret != 0){
     throw std::runtime_error("Could not reset device");
   }
+}
+
+void Application::setBaudrate(uint32_t speed){
+  auto ret = mcu.setBaudrate(speed);
+  if(ret != 0){
+    throw std::runtime_error("Could not set baudrate");
+  }
+  //ftdi.setBaudrate(speed, ftdi);
 }

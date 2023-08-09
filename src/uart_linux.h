@@ -6,8 +6,8 @@
  *******************************************************************************/
 
  /* SPDX-License-Identifier: BSD-2-Clause-Patent */
-#ifndef _FTDI_HPP_
-#define _FTDI_HPP_
+#ifndef _UARTLINUX_HPP_
+#define _UARTLINUX_HPP_
 
 #include "ftdi.hpp"
 
@@ -15,11 +15,11 @@
 #include <memory>
 #include <vector>
 
-class FTDILinux : public FTDI::Interface {
+class UARTLinux : public FTDI::Interface {
 public:
-  FTDILinux();
-  FTDILinux(const int vid, const int pid);
-  virtual ~FTDILinux();
+  UARTLinux();
+  UARTLinux(const int vid, const int pid);
+  virtual ~UARTLinux();
 
   void open(const int vid, const int pid);
   void open(std::string dev);
@@ -31,8 +31,8 @@ public:
   int writeData(std::vector<uint8_t> data);
   std::vector<uint8_t> readData();
   int setBaudrate(uint32_t speed);
-
 private:
   struct ftdi_context * ftdi = nullptr;
+  int fd;
 };
-#endif /* _FTDI_HPP_ */
+#endif /* _UARTLINUX_HPP_ */

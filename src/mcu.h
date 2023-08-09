@@ -39,6 +39,7 @@ class MCU
   virtual int flashMemory(uint8_t handle, const std::vector<uint8_t>& data) = 0;
   virtual int closeMemory(uint8_t handle) = 0;
   virtual int reset() = 0;
+  virtual int setBaudrate(uint32_t speed) = 0;
 };
 
 #endif /* _MCU_H_ */

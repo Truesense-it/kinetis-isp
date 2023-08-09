@@ -9,7 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(LibFTDI1 NO_MODULE REQUIRED)
 
-add_executable(${PROJECT_NAME} main.cpp ftdi_linux.cpp application.cpp k32w061.cpp firmware_reader.cpp vid_pid_reader.cpp)
+add_executable(${PROJECT_NAME} main.cpp ftdi_linux.cpp application.cpp k32w061.cpp firmware_reader.cpp vid_pid_reader.cpp uart_linux.cpp)
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 0.1.0)
 target_link_libraries(${PROJECT_NAME} ${LIBFTDI_LIBRARIES} ${Boost_LIBRARIES} Threads::Threads)
 get_target_property(VERSION ${PROJECT_NAME} VERSION)

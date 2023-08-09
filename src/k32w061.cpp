@@ -14,6 +14,7 @@
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
 #include <boost/log/trivial.hpp>
+#include "ftdi.hpp"
 
 #define CRC_SIZE 4
 
@@ -34,7 +35,9 @@ enum FrameType : uint8_t{
   CloseMemoryReq = 0x4A,
   CloseMemoryResp = 0x4B,
   EnableISPModeReq = 0x4E,
-  EnableISPModeResp = 0x4F
+  EnableISPModeResp = 0x4F,
+  SetBaudRateReq = 0x27,
+  SetBaudRateResp = 0x28
 };
 
 struct __attribute__((__packed__)) FrameHeader{
@@ -189,6 +192,41 @@ int K32W061::eraseMemory(uint8_t handle){
   return 0;
 }
 
+#define convert(value) ((0x000000ff & value) << 24) | ((0x0000ff00 & value) << 8) | \
+                       ((0x00ff0000 & value) >> 8) | ((0xff000000 & value) >> 24) 
+
+int K32W061::setBaudrate(uint32_t speed){
+  struct __attribute__((__packed__)) BaudrateHeader{
+    uint8_t reserved;
+    uint32_t speed;
+    
+  };
+  std::vector<uint8_t> req(sizeof(FrameHeader) + sizeof(BaudrateHeader) + CRC_SIZE);
+  FrameHeader * header = reinterpret_cast<FrameHeader*>(req.data());
+  header->size = htons(sizeof(FrameHeader) + sizeof(BaudrateHeader) + CRC_SIZE);
+  header->type = FrameType::SetBaudRateReq;
+  auto baudrate_header = reinterpret_cast<BaudrateHeader*>(req.data() + sizeof(FrameHeader));
+  baudrate_header->speed = convert(speed);
+  
+  auto crc = calculateCrc(req);
+  insertCrc(req, crc);
+
+  auto ret = dev.writeData(req);
+  if(ret != (sizeof(FrameHeader) + sizeof(BaudrateHeader) + CRC_SIZE)){
+    return -1;
+  }
+  dev.setBaudrate(speed);
+  auto resp = dev.readData();
+  if( resp.size() != (sizeof(FrameHeader) + CRC_SIZE + 1) ||
+      !responseHasSuccessStatus(resp) || 
+      !frameHasType(resp, FrameType::SetBaudRateResp) ||
+      calculateCrc(resp) != extractCrc(resp)){
+    return -1;
+  }
+
+  return 0;
+}
+
 int K32W061::getMemoryHandle(const K32W061::MemoryID id){
   struct __attribute__((__packed__)) OpenMemoryHeader{
     uint8_t memID;
@@ -318,8 +356,16 @@ int K32W061::flashMemory(uint8_t handle, const std::vector<uint8_t>& data){
       return -1;
     }
 
-    auto resp = dev.readData();
-    if( resp.size() == 0 ||
+    /*auto*/ std::vector<uint8_t> resp = dev.readData();
+    if(resp.size()<9)
+    {
+      std::vector<uint8_t> resp2 = dev.readData();
+      resp.insert(std::end(resp), std::begin(resp2), std::end(resp2));
+    }
+      
+      
+   // if( resp.size() == 0 ||
+    if( resp.size() < 9 ||
         extractCrc(resp) != calculateCrc(resp) ||
         !responseHasSuccessStatus(resp) ||
         responseType(resp) != FrameType::WriteMemoryResp){

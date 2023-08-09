@@ -25,6 +25,7 @@ public:
   void eraseMemory(MCU::MemoryID id);
   void flashFirmware(const std::vector<uint8_t>& fw);
   void reset();
+  void setBaudrate(uint32_t speed);
 
 private:
   MCU& mcu;

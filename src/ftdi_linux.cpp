@@ -13,7 +13,7 @@
 #include <memory.h>
 #include <array>
 #include <iostream>
-
+#define UNUSED(x) (void)(x)
 FTDILinux::FTDILinux(){
 
 }
@@ -28,6 +28,9 @@ FTDILinux::~FTDILinux(){
     ftdi_free(ftdi);
   }
 }
+void FTDILinux::open(std::string dev){
+  UNUSED(dev);
+}
 
 void FTDILinux::open(const int vid, const int pid){
   ftdi = ftdi_new();
@@ -41,7 +44,7 @@ void FTDILinux::open(const int vid, const int pid){
     ftdi=nullptr;
     throw std::runtime_error("Could not open USB Device");
   }
-
+  
   if(ftdi_set_baudrate(ftdi, 115200) < 0){
     ftdi_usb_close(ftdi);
     ftdi_free(ftdi);
@@ -95,4 +98,10 @@ std::vector<uint8_t> FTDILinux::readData(){
   }
       
   return data;
+}
+
+int FTDILinux::setBaudrate(uint32_t speed)
+{
+  //TODO
+  return -1;
 }
