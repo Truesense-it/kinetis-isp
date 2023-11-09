@@ -30,7 +30,8 @@ public:
   int flashMemory(uint8_t handle, const std::vector<uint8_t>& data) override;
   int closeMemory(uint8_t handle) override;
   int reset() override;
-  int setBaudrate(uint32_t speed);
+
+  int setBaudrate(uint32_t speed) override;
 
 protected:
   void insertCrc(std::vector<uint8_t>& data, unsigned long crc) const;

@@ -59,6 +59,8 @@ static int set_interface_attribs(int fd, int speed)
     return 0;
 }
 
+//termios.h implementation for MacOSX does not contain declarations of baud rates above 460800
+//so you have to set correct values for the corresponding undefined speeds!
 int get_baud(int baud)
 {
     switch (baud) {
@@ -75,29 +77,77 @@ int get_baud(int baud)
     case 230400:
         return B230400;
     case 460800:
-        return B460800;
+        #if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
+            return 460800;
+        #else
+            return B460800;
+        #endif
     case 500000:
-        return B500000;
+        #if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
+            return 500000;
+        #else
+            return B500000;
+        #endif
     case 576000:
-        return B576000;
+        #if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
+            return 576000;
+        #else
+            return B576000;
+        #endif
     case 921600:
-        return B921600;
+        #if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
+            return 921600;
+        #else
+            return B921600;
+        #endif
     case 1000000:
-        return B1000000;
+        #if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
+            return 1000000;
+        #else
+            return B1000000;
+        #endif
     case 1152000:
-        return B1152000;
+        #if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
+            return 1152000;
+        #else
+            return B1152000;
+        #endif
     case 1500000:
-        return B1500000;
+        #if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
+            return 1500000;
+        #else
+            return B1500000;
+        #endif
     case 2000000:
-        return B2000000;
+        #if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
+            return 2000000;
+        #else
+            return B2000000;
+        #endif
     case 2500000:
-        return B2500000;
+        #if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
+            return 2500000;
+        #else
+            return B2500000;
+        #endif
     case 3000000:
-        return B3000000;
+        #if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
+            return 3000000;
+        #else
+            return B3000000;
+        #endif
     case 3500000:
-        return B3500000;
+        #if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
+            return 3500000;
+        #else
+            return B3500000;
+        #endif
     case 4000000:
-        return B4000000;
+        #if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
+            return 4000000;
+        #else
+            return B4000000;
+        #endif
     default: 
         return -1;
     }
@@ -145,7 +195,7 @@ UARTLinux::~UARTLinux(){
 
 void UARTLinux::open(std::string dev)
 {
- this->fd = ::open(dev.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
+ this->fd = ::open(dev.c_str(), O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd < 0) {
         printf("Error opening %s: %s\n", dev.c_str(), strerror(errno));
         //return -1;
