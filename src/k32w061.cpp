@@ -14,6 +14,7 @@
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
 #include <boost/log/trivial.hpp>
+#include <math.h>
 #include "ftdi.hpp"
 
 #define CRC_SIZE 4
@@ -196,18 +197,25 @@ int K32W061::eraseMemory(uint8_t handle){
                        ((0x00ff0000 & value) >> 8) | ((0xff000000 & value) >> 24) 
 
 int K32W061::setBaudrate(uint32_t speed){
+  uint32_t u32Divisor;
   struct __attribute__((__packed__)) BaudrateHeader{
-    uint8_t reserved;
-    uint32_t speed;
+    uint8_t divisor;
+    uint8_t speed[4];
     
   };
+  u32Divisor = (uint32_t)roundf(1000000.0 / (float)speed);
   std::vector<uint8_t> req(sizeof(FrameHeader) + sizeof(BaudrateHeader) + CRC_SIZE);
   FrameHeader * header = reinterpret_cast<FrameHeader*>(req.data());
   header->size = htons(sizeof(FrameHeader) + sizeof(BaudrateHeader) + CRC_SIZE);
   header->type = FrameType::SetBaudRateReq;
   auto baudrate_header = reinterpret_cast<BaudrateHeader*>(req.data() + sizeof(FrameHeader));
-  baudrate_header->speed = convert(speed);
-  
+  baudrate_header->divisor=(uint8_t)u32Divisor;
+  //baudrate_header->speed = convert(speed);
+  baudrate_header->speed[0]=(speed >>  0) & 0xFF;
+  baudrate_header->speed[1]=(speed >>  8) & 0xFF;
+  baudrate_header->speed[2]=(speed >>  16) & 0xFF;
+  baudrate_header->speed[3]=(speed >>  24) & 0xFF;
+
   auto crc = calculateCrc(req);
   insertCrc(req, crc);
 
@@ -215,7 +223,7 @@ int K32W061::setBaudrate(uint32_t speed){
   if(ret != (sizeof(FrameHeader) + sizeof(BaudrateHeader) + CRC_SIZE)){
     return -1;
   }
-  dev.setBaudrate(speed);
+  
   auto resp = dev.readData();
   if( resp.size() != (sizeof(FrameHeader) + CRC_SIZE + 1) ||
       !responseHasSuccessStatus(resp) || 
@@ -223,7 +231,7 @@ int K32W061::setBaudrate(uint32_t speed){
       calculateCrc(resp) != extractCrc(resp)){
     return -1;
   }
-
+  dev.setBaudrate(speed);
   return 0;
 }
 
