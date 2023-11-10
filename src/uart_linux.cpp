@@ -23,6 +23,9 @@
 #include <boost/log/trivial.hpp>
 #include "uart_linux.h"
 #define UNUSED(x) (void)(x)
+#include <sys/ioctl.h>
+#include <IOKit/serial/ioss.h>
+
 
 static int set_interface_attribs(int fd, int speed)
 {
@@ -167,9 +170,18 @@ int set_baudrate(int fd, uint32_t speed)
         printf("Error from cfsetxspeed: %s\n", strerror(errno));
         return -1;
     }
-    if (tcsetattr(fd, TCSANOW, &tty) != 0) {
+#ifndef __APPLE__
+    int rc = tcsetattr(fd, TCSANOW, &tty);
+#else
+    int rc = ioctl(fd, IOSSIOSPEED, &speed);
+#endif
+    
+    if (rc != 0) {
+
         printf("Error from tcsetattr: %s\n", strerror(errno));
-        return -1;
+        return errno;
+
+
     }
     tcflush(fd, TCIOFLUSH);  /* discard buffers */
 
@@ -206,6 +218,7 @@ void UARTLinux::open(std::string dev)
 void UARTLinux::open(const int vid, const int pid){
   UNUSED(vid);
   UNUSED(pid);
+  UNUSED(ftdi);
   // ftdi = ftdi_new();
   // if(ftdi == nullptr){
   //   throw std::runtime_error("Could not create new FTDI instance");

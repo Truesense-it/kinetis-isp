@@ -32,7 +32,7 @@ public:
   std::vector<uint8_t> readData();
   int setBaudrate(uint32_t speed);
 private:
-  [[maybe_unused]]struct ftdi_context * ftdi = nullptr;
+  struct ftdi_context * ftdi = nullptr;
   int fd;
 };
 #endif /* _UARTLINUX_HPP_ */
