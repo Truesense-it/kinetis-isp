@@ -23,8 +23,10 @@
 #include <boost/log/trivial.hpp>
 #include "uart_linux.h"
 #define UNUSED(x) (void)(x)
+#ifdef __APPLE__
 #include <sys/ioctl.h>
 #include <IOKit/serial/ioss.h>
+#endif
 
 
 static int set_interface_attribs(int fd, int speed)
